@@ -92,7 +92,7 @@
 </head>
 
 <body>
-
+    <!-- <img onclick="update('savings',${index})"  src="./assets/edit.svg" alt="" srcset=""> -->
     <div class="section" id="expense-section">
         <div class="section-header">
             <h2>Expenses</h2>
@@ -120,7 +120,9 @@
             <h2>Lending</h2>
             <img src="./assets/add.svg" onclick="addEntry('lending')" alt="">
         </div>
-        <div class="list" id="lending-list"></div>
+        <div id="lending-section-content">
+
+        </div>
     </div>
 
     <div class="section summary">
@@ -144,10 +146,12 @@
             lendings: [
 
             ],
+            other:[],
             summary: {
                 totalExpenses: 0,
                 totalSavings: 0,
                 totalLending: 0,
+                otherTotal: 0,
                 balance: 0
             }
         }
@@ -178,6 +182,8 @@
                 updateExpense(id, index);
             } else if (type == 'savings') {
                 updateSavings(id, index);
+            }else if (type == 'lending') {
+                updateLending(id, index);
             }
         }
 
@@ -193,7 +199,7 @@
                 div.innerHTML = `
              <input type="text" class="input-text" name="name"  value="${obj.name}" id="expense-name-${index}" placeholder="expense name" onblur="update('expense','expense-name-${index}',${index})"  >
             <input type="number" class="input-amount" name="amount"   value="${obj.amount}"  id="expense-amount-${index}" placeholder="Amount" onblur="update('expense','expense-amount-${index}',${index})">  
-           <img onclick="update('expense',${index})"  src="./assets/edit.svg" alt="" srcset="">
+           
            <img onclick="remove('expense',${index})"  src="./assets/delete.svg" alt="" srcset="">
             `;
                 container.appendChild(div);
@@ -212,10 +218,29 @@
                 div.innerHTML = `
              <input type="text" class="input-text" name="name" value="${obj.name}"   id="savings-name-${index}"  placeholder="savings name"  onblur="update('savings','savings-name-${index}',${index})"   >
             <input type="number" class="input-amount" name="amount" value="${obj.amount}"  id="savings-amount-${index}" placeholder="Amount"  onblur="update('savings','savings-amount-${index}',${index})"   >
-           <img onclick="update('savings',${index})"  src="./assets/edit.svg" alt="" srcset="">
+          
            <img onclick="remove('savings',${index})"  src="./assets/delete.svg" alt="" srcset="">
             `;
                 containerSaving.appendChild(div);
+            });
+        }
+        function renderLendings() {
+            const lendingCont = document.getElementById('lending-section-content');
+            lendingCont.innerHTML = ''; // Clear previous content
+            const rows = lendingCont.querySelectorAll('.input-row');
+            rows.forEach(row => row.remove());
+
+            appData.lendings.forEach((obj, index) => {
+                const div = document.createElement('div');
+                div.className = 'input-row';
+                div.id = `${index}`
+                div.innerHTML = `
+             <input type="text" class="input-text" name="name" value="${obj.name}"   id="lending-name-${index}"  placeholder="lending name"  onblur="update('lending','lending-name-${index}',${index})"   >
+            <input type="number" class="input-amount" name="amount" value="${obj.amount}"  id="lending-amount-${index}" placeholder="Amount"  onblur="update('lending','lending-amount-${index}',${index})"   >
+          
+           <img onclick="remove('lending',${index})"  src="./assets/delete.svg" alt="" srcset="">
+            `;
+                lendingCont.appendChild(div);
             });
         }
 
@@ -229,6 +254,11 @@
                 updateSummary();
                 renderSavings();
             }
+            else if (type == 'lending') {
+                appData.lendings.push({ name: '', amount: 0 });
+                updateSummary();
+                renderLendings();
+            }
         }
 
         function remove(type, indx) {
@@ -236,6 +266,8 @@
                 removeExpense(indx);
             } else if (type == 'savings') {
                 removeSavings(indx);
+            }else if (type == 'lending') {
+                removeLending(indx);
             }
         }
 
@@ -249,6 +281,11 @@
             appData.savingsInputs.splice(index, 1);
             updateSummary();
             renderSavings();
+        }
+        removeLending = (index) => {
+            appData.lendings.splice(index, 1);
+            updateSummary();
+            renderLendings();
         }
 
         updateExpense = (id, index) => {
@@ -277,12 +314,28 @@
                 updateSummary();
             }
         }
+        updateLending = (id, index) => {
+            const input = document.getElementById(id);
+            if (input.name === "name") {
+                appData.lendings[index].name = input.value.trim();
+                sveSatate();
+            }
+            else if (input.name === "amount") {
+                const amount = parseFloat(input.value.trim());
+                if (isNaN(amount) || amount <= 0) return;
+                appData.lendings[index].amount = amount;
+                updateSummary();
+            }
+        }
+       
         sveSatate = () => {
             localStorage.setItem('FinanceTrackerAppData', JSON.stringify(appData));
         }
+      
         fetchData();
         renderExpenses();
         renderSavings();
+        renderLendings();
         updateSummary();
     </script>
 

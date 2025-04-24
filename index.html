@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Finance Tracker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            padding: 8px;
+            height: 100dvh;
+            overflow-y: auto;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: start;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-header svg {
+            margin-top: 5px;
+        }
+
+        .section h2 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .input-row .input-text {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+
+        .input-row .input-amount {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 55px;
+        }
+
+        .input-row button {
+            padding: 8px 12px;
+            border: none;
+            background: #007BFF;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .list {
+            margin-top: 10px;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary {
+            background-color: #e0f7fa;
+        }
+
+        .summary .list-item span {
+            font-weight: bold;
+            color: #00796b;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="section" id="expense-section">
+        <div class="section-header">
+            <h2>Expenses</h2>
+            <img src="./assets/add.svg" onclick="addEntry('expense')" alt="">
+        </div>
+        <div id="expense-section-content">
+
+        </div>
+        <div class="list" id="expense-list"></div>
+    </div>
+
+    <div class="section" id="savings-section">
+        <div class="section-header">
+            <h2>Savings</h2>
+            <img src="./assets/add.svg" onclick="addEntry('savings')" alt="">
+        </div>
+        <div id="savings-section-content">
+
+        </div>
+        <div class="list" id="savings-list"></div>
+    </div>
+
+    <div class="section" id="lending-section">
+        <div class="section-header">
+            <h2>Lending</h2>
+            <img src="./assets/add.svg" onclick="addEntry('lending')" alt="">
+        </div>
+        <div class="list" id="lending-list"></div>
+    </div>
+
+    <div class="section summary">
+        <h2>Summary</h2>
+        <div class="list">
+            <div class="list-item"><span>Total Expenses:</span><span id="total-expense">₹ 0</span></div>
+            <div class="list-item"><span>Total Savings:</span><span id="total-savings">₹ 0</span></div>
+            <div class="list-item"><span>Total Lending:</span><span id="total-lending">₹ 0</span></div>
+            <div class="list-item"><span>Balance:</span><span id="balance">₹ 0</span></div>
+        </div>
+    </div>
+
+    <script>
+        let appData = {
+            expenseInputs: [
+
+            ],
+            savingsInputs: [
+
+            ],
+            lendings: [
+
+            ],
+            summary: {
+                totalExpenses: 0,
+                totalSavings: 0,
+                totalLending: 0,
+                balance: 0
+            }
+        }
+        function fetchData() {
+            const storedData = localStorage.getItem('FinanceTrackerAppData');
+            if (storedData) {
+                appData = JSON.parse(storedData);
+            }
+        }
+
+        function updateSummary() {
+            appData.summary.totalExpenses = appData.expenseInputs.reduce((acc, obj) => acc + obj.amount, 0);
+            appData.summary.totalSavings = appData.savingsInputs.reduce((acc, obj) => acc + obj.amount, 0);
+            appData.summary.totalLending = appData.lendings.reduce((acc, obj) => acc + obj.amount, 0);
+
+            document.getElementById('total-expense').textContent = `₹ ${appData.summary.totalExpenses.toLocaleString()}`;
+            document.getElementById('total-savings').textContent = `₹ ${appData.summary.totalSavings.toLocaleString()}`;
+            document.getElementById('total-lending').textContent = `₹ ${appData.summary.totalLending.toLocaleString()}`;
+
+            const balance = appData.summary.totalSavings - appData.summary.totalExpenses;
+            appData.summary.balance = balance;
+            document.getElementById('balance').textContent = `₹ ${balance.toLocaleString()}`;
+            sveSatate();
+        }
+
+        function update(type, id, index) {
+            if (type == 'expense') {
+                updateExpense(id, index);
+            } else if (type == 'savings') {
+                updateSavings(id, index);
+            }
+        }
+
+        function renderExpenses() {
+            const container = document.getElementById('expense-section-content');
+            container.inenrHTML = ''; // Clear previous content
+            const rows = container.querySelectorAll('.input-row');
+            rows.forEach(row => row.remove());
+
+            appData.expenseInputs.forEach((obj, index) => {
+                const div = document.createElement('div');
+                div.className = 'input-row';
+                div.innerHTML = `
+             <input type="text" class="input-text" name="name"  value="${obj.name}" id="expense-name-${index}" placeholder="expense name" onblur="update('expense','expense-name-${index}',${index})"  >
+            <input type="number" class="input-amount" name="amount"   value="${obj.amount}"  id="expense-amount-${index}" placeholder="Amount" onblur="update('expense','expense-amount-${index}',${index})">  
+           <img onclick="update('expense',${index})"  src="./assets/edit.svg" alt="" srcset="">
+           <img onclick="remove('expense',${index})"  src="./assets/delete.svg" alt="" srcset="">
+            `;
+                container.appendChild(div);
+            });
+        }
+        function renderSavings() {
+            const containerSaving = document.getElementById('savings-section-content');
+            containerSaving.innerHTML = ''; // Clear previous content
+            const rows = containerSaving.querySelectorAll('.input-row');
+            rows.forEach(row => row.remove());
+
+            appData.savingsInputs.forEach((obj, index) => {
+                const div = document.createElement('div');
+                div.className = 'input-row';
+                div.id = `${index}`
+                div.innerHTML = `
+             <input type="text" class="input-text" name="name" value="${obj.name}"   id="savings-name-${index}"  placeholder="savings name"  onblur="update('savings','savings-name-${index}',${index})"   >
+            <input type="number" class="input-amount" name="amount" value="${obj.amount}"  id="savings-amount-${index}" placeholder="Amount"  onblur="update('savings','savings-amount-${index}',${index})"   >
+           <img onclick="update('savings',${index})"  src="./assets/edit.svg" alt="" srcset="">
+           <img onclick="remove('savings',${index})"  src="./assets/delete.svg" alt="" srcset="">
+            `;
+                containerSaving.appendChild(div);
+            });
+        }
+
+        function addEntry(type) {
+            if (type == 'expense') {
+                appData.expenseInputs.push({ name: '', amount: 0 });
+                updateSummary();
+                renderExpenses();
+            } else if (type == 'savings') {
+                appData.savingsInputs.push({ name: '', amount: 0 });
+                updateSummary();
+                renderSavings();
+            }
+        }
+
+        function remove(type, indx) {
+            if (type == 'expense') {
+                removeExpense(indx);
+            } else if (type == 'savings') {
+                removeSavings(indx);
+            }
+        }
+
+
+        removeExpense = (index) => {
+            appData.expenseInputs.splice(index, 1);
+            updateSummary();
+            renderExpenses();
+        }
+        removeSavings = (index) => {
+            appData.savingsInputs.splice(index, 1);
+            updateSummary();
+            renderSavings();
+        }
+
+        updateExpense = (id, index) => {
+            const input = document.getElementById(id);
+            if (input.name === "name") {
+                appData.expenseInputs[index].name = input.value.trim();
+                sveSatate();
+            }
+            else if (input.name === "amount") {
+                const amount = parseFloat(input.value.trim());
+                if (isNaN(amount) || amount <= 0) return;
+                appData.expenseInputs[index].amount = amount;
+                updateSummary();
+            }
+        }
+        updateSavings = (id, index) => {
+            const input = document.getElementById(id);
+            if (input.name === "name") {
+                appData.savingsInputs[index].name = input.value.trim();
+                sveSatate();
+            }
+            else if (input.name === "amount") {
+                const amount = parseFloat(input.value.trim());
+                if (isNaN(amount) || amount <= 0) return;
+                appData.savingsInputs[index].amount = amount;
+                updateSummary();
+            }
+        }
+        sveSatate = () => {
+            localStorage.setItem('FinanceTrackerAppData', JSON.stringify(appData));
+        }
+        fetchData();
+        renderExpenses();
+        renderSavings();
+        updateSummary();
+    </script>
+
+</body>
+
+</html>
